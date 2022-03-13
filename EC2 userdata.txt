@@ -1,0 +1,19 @@
+#!/bin/bash
+yum install -y httpd
+amazon-linux-extras install -y lamp-mariadb10.2-php7.2 php7.2
+cd /home/ec2-user/
+wget https://wordpress.org/latest.tar.gz
+tar -xzf latest.tar.gz
+cd /home/ec2-user/wordpress
+aws s3 cp s3://wordpress-top-secret-bucket/wp-config.php wp-config.php
+cd /home/ec2-user
+cp -r wordpress/* /var/www/html
+mkdir -p /var/www/html/wp-content/uploads
+yum install -y amazon-efs-utils
+mount -t efs fs-0da79ea80f94bb244: /var/www/html/wp-content/uploads
+echo "fs-0da79ea80f94bb244:/ /var/www/html/wp-content/uploads efs defaults,_netdev 0 0" >> /etc/fstab
+sudo chown -R apache:apache /var/www
+sudo chmod 2775 /var/www
+find /var/www -type d -exec sudo chmod 2775 {} \;
+find /var/www -type f -exec sudo chmod 0664 {} \;
+systemctl start httpd
